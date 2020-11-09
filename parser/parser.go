@@ -1,6 +1,6 @@
 package parser
 
-// Transform series of tokens into meaningfull data structure ( AST )
+// Transform series of meaningless tokens into meaningful data structure ( AST )
 
 import (
 	"fmt"
@@ -39,10 +39,12 @@ type Parser struct {
 
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l, errors: []string{}}
-
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
@@ -67,35 +69,36 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
-func (p *Parser) nextToken() {
-	p.curToken = p.peekToken
-	p.peekToken = p.l.NextToken()
-}
-
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 
 	case token.LET:
-		res := p.parseLetStatement()
-		if res == nil {
+		stmt := p.parseLetStatement()
+
+		if stmt == nil {
 			// need to return `nil` so the interface type is `nil` thus the entire interface is equal to nil
 			return nil
 		}
-		return res
+
+		return stmt
 
 	case token.RETURN:
-		res := p.parseReturnStatement()
-		if res == nil {
+		stmt := p.parseReturnStatement()
+
+		if stmt == nil {
 			return nil
 		}
-		return res
+
+		return stmt
 
 	default:
-		res := p.parseExpressionStatement()
-		if res == nil {
+		stmt := p.parseExpressionStatement()
+
+		if stmt == nil {
 			return nil
 		}
-		return res
+
+		return stmt
 	}
 }
 
@@ -146,11 +149,64 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
+	// Eat optional semicolon if any
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
 	return stmt
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+
+	if prefix == nil {
+		p.noPrefixParserFnError(p.curToken.Type)
+		return nil
+	}
+
+	return prefix()
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	exp := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, e := strconv.ParseInt(p.curToken.Literal, 0, 64)
+
+	if e != nil {
+		msg := fmt.Sprintf("Could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+
+		return nil
+	}
+
+	exp.Value = value
+
+	return exp
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	exp := &ast.PrefixExpression{Token: p.curToken, Operator: p.curToken.Literal}
+
+	p.nextToken() // consume next token since prefix expression does prefix something right
+
+	exp.Right = p.parseExpression(PREFIX)
+
+	return exp
+}
+
+func (p *Parser) noPrefixParserFnError(t token.TokenType) {
+	msg := fmt.Sprintf("No prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) nextToken() {
+	p.curToken = p.peekToken
+	p.peekToken = p.l.NextToken()
 }
 
 func (p *Parser) peekTokenIs(t token.TokenType) bool {
@@ -186,35 +242,4 @@ func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
-}
-
-func (p *Parser) parseExpression(precedence int) ast.Expression {
-	prefix := p.prefixParseFns[p.curToken.Type]
-
-	if prefix == nil {
-		return nil
-	}
-
-	return prefix()
-}
-
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-}
-
-func (p *Parser) parseIntegerLiteral() ast.Expression {
-	exp := &ast.IntegerLiteral{Token: p.curToken}
-
-	value, e := strconv.ParseInt(p.curToken.Literal, 0, 64)
-
-	if e != nil {
-		msg := fmt.Sprintf("Could not parse %q as integer", p.curToken.Literal)
-		p.errors = append(p.errors, msg)
-
-		return nil
-	}
-
-	exp.Value = value
-
-	return exp
 }
