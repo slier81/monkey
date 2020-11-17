@@ -16,12 +16,12 @@ func TestString(t *testing.T) {
 					Literal: "let",
 				},
 				Name: &Identifier{
-					Token: token.Token{Type: token.IDENT, Literal: "myVar"},
+					Token: token.Token{Type: token.IDENTIFIER, Literal: "myVar"},
 					Value: "myVar",
 				},
 				Value: &Identifier{
 					Token: token.Token{
-						Type:    token.IDENT,
+						Type:    token.IDENTIFIER,
 						Literal: "anotherVar",
 					},
 					Value: "anotherVar",

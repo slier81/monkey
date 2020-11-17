@@ -1,12 +1,13 @@
 package token
 
 const (
+	// Special token
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
 	// Identifiers + literals
-	IDENT = "IDENT"
-	INT   = "INT"
+	IDENTIFIER = "IDENTIFIER"
+	INT        = "INT"
 
 	// Operators
 	ASSIGN   = "="
@@ -55,10 +56,10 @@ var keywords = map[string]TokenType{
 	"return": RETURN,
 }
 
-func LookupIdent(ident string) TokenType {
-	if keyword, ok := keywords[ident]; ok {
+func LookupIdentifier(identifier string) TokenType {
+	if keyword, ok := keywords[identifier]; ok {
 		return keyword
 	}
 
-	return IDENT
+	return IDENTIFIER
 }
