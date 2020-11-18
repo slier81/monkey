@@ -1,5 +1,7 @@
 package token
 
+// Group bunch of stream of letters into words ( token )
+
 const (
 	// Special token
 	ILLEGAL = "ILLEGAL"

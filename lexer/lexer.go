@@ -7,10 +7,10 @@ import (
 )
 
 type Lexer struct {
-	input        string
-	position     int  // current position in input (points to current char)
-	readPosition int  // current reading position in input (after current char)
-	ch           byte // current char under examination
+	input           string
+	currentPosition int  // current position in input (points to current char)
+	readPosition    int  // current reading position in input (point to the character after the current char)
+	ch              byte // current char under examination
 }
 
 func newToken(tokenType token.TokenType, ch byte) token.Token {
@@ -36,6 +36,7 @@ func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	switch l.ch {
+	// Token using single character
 	case ';':
 		tok = newToken(token.SEMICOLON, l.ch)
 	case '(':
@@ -50,24 +51,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LBRACE, l.ch)
 	case '}':
 		tok = newToken(token.RBRACE, l.ch)
-	case '=':
-		if l.peekChar() == '=' {
-			ch := l.ch
-			l.readChar()
-			tok = token.Token{Type: token.EQ, Literal: string(ch) + string(l.ch)}
-		} else {
-			tok = newToken(token.ASSIGN, l.ch)
-		}
 	case '-':
 		tok = newToken(token.MINUS, l.ch)
-	case '!':
-		if l.peekChar() == '=' {
-			ch := l.ch
-			l.readChar()
-			tok = token.Token{Type: token.NOT_EQ, Literal: string(ch) + string(l.ch)}
-		} else {
-			tok = newToken(token.BANG, l.ch)
-		}
 	case '/':
 		tok = newToken(token.SLASH, l.ch)
 	case '*':
@@ -80,6 +65,26 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Type = token.EOF
 		tok.Literal = ""
 
+	// Token using double character
+	case '=':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.EQ, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = newToken(token.ASSIGN, l.ch)
+		}
+
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.NOT_EQ, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = newToken(token.BANG, l.ch)
+		}
+
+	// Token using more than 2 character
 	default:
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
@@ -107,7 +112,7 @@ func (l *Lexer) readChar() {
 		l.ch = l.input[l.readPosition]
 	}
 
-	l.position = l.readPosition
+	l.currentPosition = l.readPosition
 	l.readPosition++
 }
 
@@ -121,7 +126,7 @@ func (l *Lexer) peekChar() byte {
 
 func (l *Lexer) readIdentifier() string {
 	// Store starting position of the identifier
-	position := l.position
+	position := l.currentPosition
 
 	// 0123456789
 	// ||||||||||||||||
@@ -131,11 +136,11 @@ func (l *Lexer) readIdentifier() string {
 		l.readChar()
 	}
 
-	return l.input[position:l.position]
+	return l.input[position:l.currentPosition]
 }
 
 func (l *Lexer) skipWhiteSpace() {
-	// Advance the position the non whitespace character
+	// Advance the position to the non whitespace character
 	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
 		l.readChar()
 	}
@@ -143,11 +148,11 @@ func (l *Lexer) skipWhiteSpace() {
 
 func (l *Lexer) readNumber() string {
 	// Store starting position of the identifier
-	position := l.position
+	position := l.currentPosition
 
 	for isDigit(l.ch) {
 		l.readChar()
 	}
 
-	return l.input[position:l.position]
+	return l.input[position:l.currentPosition]
 }
