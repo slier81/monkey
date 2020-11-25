@@ -31,128 +31,128 @@ func New(input string) *Lexer {
 	return l
 }
 
-func (l *Lexer) NextToken() token.Token {
-	l.skipWhiteSpace()
+func (lex *Lexer) NextToken() token.Token {
+	lex.skipWhiteSpace()
 	var tok token.Token
 
-	switch l.character {
+	switch lex.character {
 	// Token using single character
 	case ';':
-		tok = newToken(token.SEMICOLON, l.character)
+		tok = newToken(token.SEMICOLON, lex.character)
 	case '(':
-		tok = newToken(token.LPAREN, l.character)
+		tok = newToken(token.LPAREN, lex.character)
 	case ')':
-		tok = newToken(token.RPAREN, l.character)
+		tok = newToken(token.RPAREN, lex.character)
 	case ',':
-		tok = newToken(token.COMMA, l.character)
+		tok = newToken(token.COMMA, lex.character)
 	case '+':
-		tok = newToken(token.PLUS, l.character)
+		tok = newToken(token.PLUS, lex.character)
 	case '{':
-		tok = newToken(token.LBRACE, l.character)
+		tok = newToken(token.LBRACE, lex.character)
 	case '}':
-		tok = newToken(token.RBRACE, l.character)
+		tok = newToken(token.RBRACE, lex.character)
 	case '-':
-		tok = newToken(token.MINUS, l.character)
+		tok = newToken(token.MINUS, lex.character)
 	case '/':
-		tok = newToken(token.SLASH, l.character)
+		tok = newToken(token.SLASH, lex.character)
 	case '*':
-		tok = newToken(token.ASTERISK, l.character)
+		tok = newToken(token.ASTERISK, lex.character)
 	case '<':
-		tok = newToken(token.LT, l.character)
+		tok = newToken(token.LT, lex.character)
 	case '>':
-		tok = newToken(token.GT, l.character)
+		tok = newToken(token.GT, lex.character)
 	case 0:
 		tok.Type = token.EOF
 		tok.Literal = ""
 
 	// Token using double character
 	case '=':
-		if l.peekChar() == '=' {
-			ch := l.character
-			l.readChar()
-			tok = token.Token{Type: token.EQ, Literal: string(ch) + string(l.character)}
+		if lex.peekChar() == '=' {
+			ch := lex.character
+			lex.readChar()
+			tok = token.Token{Type: token.EQ, Literal: string(ch) + string(lex.character)}
 		} else {
-			tok = newToken(token.ASSIGN, l.character)
+			tok = newToken(token.ASSIGN, lex.character)
 		}
 
 	case '!':
-		if l.peekChar() == '=' {
-			ch := l.character
-			l.readChar()
-			tok = token.Token{Type: token.NOT_EQ, Literal: string(ch) + string(l.character)}
+		if lex.peekChar() == '=' {
+			ch := lex.character
+			lex.readChar()
+			tok = token.Token{Type: token.NOT_EQ, Literal: string(ch) + string(lex.character)}
 		} else {
-			tok = newToken(token.BANG, l.character)
+			tok = newToken(token.BANG, lex.character)
 		}
 
 	// Token using more than 2 character
 	default:
-		if isLetter(l.character) {
-			tok.Literal = l.readIdentifier()
+		if isLetter(lex.character) {
+			tok.Literal = lex.readIdentifier()
 			tok.Type = token.LookupIdentifier(tok.Literal)
 			return tok
 		}
 
-		if isDigit(l.character) {
-			tok.Literal = l.readNumber()
+		if isDigit(lex.character) {
+			tok.Literal = lex.readNumber()
 			tok.Type = token.INT
 			return tok
 		}
 
-		tok = newToken(token.ILLEGAL, l.character)
+		tok = newToken(token.ILLEGAL, lex.character)
 	}
 
-	l.readChar()
+	lex.readChar()
 	return tok
 }
 
-func (l *Lexer) readChar() {
-	if l.readPosition >= len(l.input) {
-		l.character = 0
+func (lex *Lexer) readChar() {
+	if lex.readPosition >= len(lex.input) {
+		lex.character = 0
 	} else {
-		l.character = l.input[l.readPosition]
+		lex.character = lex.input[lex.readPosition]
 	}
 
-	l.currentPosition = l.readPosition
-	l.readPosition++
+	lex.currentPosition = lex.readPosition
+	lex.readPosition++
 }
 
-func (l *Lexer) peekChar() byte {
-	if l.readPosition >= len(l.input) {
+func (lex *Lexer) peekChar() byte {
+	if lex.readPosition >= len(lex.input) {
 		return 0
 	}
 
-	return l.input[l.readPosition]
+	return lex.input[lex.readPosition]
 }
 
-func (l *Lexer) readIdentifier() string {
+func (lex *Lexer) readIdentifier() string {
 	// Store starting position of the identifier
-	position := l.currentPosition
+	position := lex.currentPosition
 
 	// 0123456789
 	// ||||||||||||||||
 	// let name = "joe"
 
-	for isLetter(l.character) {
-		l.readChar()
+	for isLetter(lex.character) {
+		lex.readChar()
 	}
 
-	return l.input[position:l.currentPosition]
+	return lex.input[position:lex.currentPosition]
 }
 
-func (l *Lexer) skipWhiteSpace() {
+func (lex *Lexer) skipWhiteSpace() {
 	// Advance the position to the non whitespace character
-	for l.character == ' ' || l.character == '\t' || l.character == '\n' || l.character == '\r' {
-		l.readChar()
+	for lex.character == ' ' || lex.character == '\t' || lex.character == '\n' || lex.character == '\r' {
+		lex.readChar()
 	}
 }
 
-func (l *Lexer) readNumber() string {
+func (lex *Lexer) readNumber() string {
 	// Store starting position of the identifier
-	position := l.currentPosition
+	position := lex.currentPosition
 
-	for isDigit(l.character) {
-		l.readChar()
+	for isDigit(lex.character) {
+		lex.readChar()
 	}
 
-	return l.input[position:l.currentPosition]
+	return lex.input[position:lex.currentPosition]
 }
